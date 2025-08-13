@@ -1,0 +1,157 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions for authentication and authorization
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserId() {
+      return request.auth.uid;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && getUserId() == userId;
+    }
+    
+    function isTeamMember(teamId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/teams/$(teamId)) &&
+             getUserId() in get(/databases/$(database)/documents/teams/$(teamId)).data.members;
+    }
+    
+    function isTeamAdmin(teamId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/teams/$(teamId)) &&
+             getUserId() == get(/databases/$(database)/documents/teams/$(teamId)).data.ownerId;
+    }
+    
+    function hasValidUserData() {
+      return request.resource.data.keys().hasAll(['userId', 'type', 'timestamp', 'data']) &&
+             request.resource.data.userId is string &&
+             request.resource.data.type in ['network', 'navigation', 'database', 'plain'] &&
+             request.resource.data.timestamp is timestamp;
+    }
+    
+    // Users collection - users can only access their own data
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == getUserId() &&
+                       request.resource.data.keys().hasAll(['userId', 'role', 'isActive', 'createdAt']);
+    }
+    
+    // Teams collection
+    match /teams/{teamId} {
+      // Team owners can read/write everything
+      allow read, write: if isTeamAdmin(teamId);
+      
+      // Team members can read team data but not modify
+      allow read: if isTeamMember(teamId);
+      
+      // Only authenticated users can create teams
+      allow create: if isAuthenticated() && 
+                       request.resource.data.ownerId == getUserId() &&
+                       request.resource.data.keys().hasAll(['teamId', 'name', 'ownerId', 'members', 'createdAt']);
+    }
+    
+    // Apps collection  
+    match /apps/{appId} {
+      // App owners and team admins can manage apps
+      allow read, write: if isAuthenticated() && 
+                            (request.resource.data.ownerId == getUserId() || 
+                             isTeamAdmin(resource.data.teamId));
+      
+      // Team members can read app data
+      allow read: if isTeamMember(resource.data.teamId);
+      
+      // Only authenticated users can create apps
+      allow create: if isAuthenticated() && 
+                       request.resource.data.ownerId == getUserId() &&
+                       request.resource.data.keys().hasAll(['appId', 'name', 'packageName', 'teamId', 'ownerId', 'createdAt']);
+    }
+    
+    // Sessions collection
+    match /sessions/{sessionId} {
+      // Users can only access their own sessions
+      allow read, write: if isAuthenticated() && 
+                            resource.data.userId == getUserId();
+      
+      // Team members can read sessions if user allows team access
+      allow read: if isAuthenticated() && 
+                     isTeamMember(resource.data.teamId) &&
+                     get(/databases/$(database)/documents/users/$(resource.data.userId)).data.settings.allowTeamAccess == true;
+      
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == getUserId() &&
+                       hasValidSessionData();
+    }
+    
+    // Main logs collection - CRITICAL SECURITY
+    match /logs/{logId} {
+      // Users can only read/write their own logs
+      allow read, write: if isAuthenticated() && 
+                            resource.data.userId == getUserId();
+      
+      // Team members can read logs if:
+      // 1. They are team members AND
+      // 2. The log owner allows team access AND  
+      // 3. The logs are not older than retention period
+      allow read: if isAuthenticated() && 
+                     resource.data.teamId != null &&
+                     isTeamMember(resource.data.teamId) &&
+                     get(/databases/$(database)/documents/users/$(resource.data.userId)).data.settings.allowTeamAccess == true &&
+                     resource.data.timestamp > timestamp.date(2024, 1, 1); // Adjust based on retention
+      
+      // Only log owners can create logs
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == getUserId() &&
+                       hasValidUserData();
+      
+      // Prevent unauthorized modifications
+      allow update: if false;
+      
+      // Only allow deletion by log owner or team admin
+      allow delete: if isAuthenticated() && 
+                       (resource.data.userId == getUserId() || 
+                        (resource.data.teamId != null && isTeamAdmin(resource.data.teamId)));
+    }
+    
+    // Date-sharded logs (for high-volume scenarios)
+    match /logs_{year}_{month}/{logId} {
+      // Same rules as main logs collection
+      allow read, write: if isAuthenticated() && 
+                            resource.data.userId == getUserId();
+      
+      allow read: if isAuthenticated() && 
+                     resource.data.teamId != null &&
+                     isTeamMember(resource.data.teamId) &&
+                     get(/databases/$(database)/documents/users/$(resource.data.userId)).data.settings.allowTeamAccess == true;
+      
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == getUserId() &&
+                       hasValidUserData();
+      
+      allow update: if false;
+      
+      allow delete: if isAuthenticated() && 
+                       (resource.data.userId == getUserId() || 
+                        (resource.data.teamId != null && isTeamAdmin(resource.data.teamId)));
+    }
+    
+    // Helper function for session validation
+    function hasValidSessionData() {
+      return request.resource.data.keys().hasAll(['sessionId', 'userId', 'appId', 'startTime']) &&
+             request.resource.data.sessionId is string &&
+             request.resource.data.userId is string &&
+             request.resource.data.appId is string &&
+             request.resource.data.startTime is timestamp;
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
