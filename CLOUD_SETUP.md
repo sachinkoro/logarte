@@ -30,7 +30,7 @@ import 'package:logarte/logarte.dart';
 
 void main() {
   // 🔐 SECURE: No Firebase credentials in your app!
-  final logarte = Logarte.secure(
+  final logarte = Logarte(
     secureConfig: LogarteSecureConfig.production(
       apiEndpoint: 'https://your-functions-url.com',
       apiKey: 'your-secure-api-key',

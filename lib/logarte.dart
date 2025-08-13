@@ -7,8 +7,6 @@ export 'src/channels/logarte_navigator_observer.dart';
 export 'src/channels/logarte_dio_interceptor.dart';
 export 'src/console/logarte_magical_tap.dart';
 export 'src/console/logarte_dashboard_screen.dart';
-export 'src/services/logarte_cloud_config.dart';
 export 'src/services/logarte_secure_config.dart';
-export 'src/services/firebase_logarte_service.dart';
 export 'src/services/logarte_secure_service.dart';
 export 'src/services/logarte_alert_service.dart';

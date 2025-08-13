@@ -15,10 +15,6 @@ dependencies:
   http: ^1.1.0
   flutter:
     sdk: flutter
-  # Firebase dependencies (optional for secure API approach)
-  firebase_core: ^3.6.0
-  cloud_firestore: ^5.4.3
-  firebase_auth: ^5.3.1
   # Additional utilities
   device_info_plus: ^10.1.2
   package_info_plus: ^8.0.2

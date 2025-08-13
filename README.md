@@ -56,10 +56,6 @@ Add to your `pubspec.yaml`:
 ```yaml
 dependencies:
   logarte: ^1.2.0
-  
-  # For cloud features (optional)
-  firebase_core: ^3.6.0
-  cloud_firestore: ^5.4.3
 ```
 
 Then run:

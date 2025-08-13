@@ -8,8 +8,6 @@ import 'package:logarte/src/extensions/object_extensions.dart';
 import 'package:logarte/src/extensions/route_extensions.dart';
 import 'package:logarte/src/models/logarte_entry.dart';
 import 'package:logarte/src/models/navigation_action.dart';
-import 'package:logarte/src/services/firebase_logarte_service.dart';
-import 'package:logarte/src/services/logarte_cloud_config.dart';
 import 'package:logarte/src/services/logarte_secure_config.dart';
 import 'package:logarte/src/services/logarte_secure_service.dart';
 import 'package:logarte/src/services/logarte_alert_service.dart';
@@ -24,9 +22,6 @@ class Logarte {
   final bool disableDebugConsoleLogs;
   final Widget? customTab;
 
-  // Cloud logging configuration
-  final LogarteCloudConfig? cloudConfig;
-
   // Secure API configuration
   final LogarteSecureConfig? secureConfig;
 
@@ -34,7 +29,6 @@ class Logarte {
   final AlertConfig alertConfig;
 
   // Service instances
-  FirebaseLogarteService? _firebaseService;
   LogarteSecureService? _secureService;
   LogarteAlertService? _alertService;
 
@@ -47,42 +41,12 @@ class Logarte {
     this.logBufferLength = 2500,
     this.disableDebugConsoleLogs = false,
     this.customTab,
-    this.cloudConfig,
     this.secureConfig,
     this.alertConfig = const AlertConfig(),
-  }) : assert(
-          cloudConfig == null || secureConfig == null,
-          'Cannot use both cloudConfig and secureConfig. Choose one approach.',
-        ) {
-    _initializeCloudLogging();
+  }) {
     _initializeSecureLogging();
     _initializeAlertSystem();
   }
-
-  /// Create Logarte with direct Firebase configuration (less secure)
-  Logarte.firebase({
-    String? password,
-    bool ignorePassword = !kReleaseMode,
-    Function(String data)? onShare,
-    Function(BuildContext context)? onRocketLongPressed,
-    Function(BuildContext context)? onRocketDoubleTapped,
-    int logBufferLength = 2500,
-    bool disableDebugConsoleLogs = false,
-    Widget? customTab,
-    required LogarteCloudConfig cloudConfig,
-    AlertConfig alertConfig = const AlertConfig(),
-  }) : this(
-          password: password,
-          ignorePassword: ignorePassword,
-          onShare: onShare,
-          onRocketLongPressed: onRocketLongPressed,
-          onRocketDoubleTapped: onRocketDoubleTapped,
-          logBufferLength: logBufferLength,
-          disableDebugConsoleLogs: disableDebugConsoleLogs,
-          customTab: customTab,
-          cloudConfig: cloudConfig,
-          alertConfig: alertConfig,
-        );
 
   /// Create Logarte with secure API configuration (recommended)
   Logarte.secure({
@@ -110,16 +74,6 @@ class Logarte {
         );
 
   final logs = ValueNotifier(<LogarteEntry>[]);
-
-  void _initializeCloudLogging() {
-    if (cloudConfig?.enableCloudLogging == true) {
-      try {
-        _firebaseService = FirebaseLogarteService(config: cloudConfig!);
-      } catch (e) {
-        debugPrint('Failed to initialize Firebase logging: $e');
-      }
-    }
-  }
 
   void _initializeSecureLogging() {
     if (secureConfig?.enableCloudLogging == true) {
@@ -161,10 +115,7 @@ class Logarte {
     }
     logs.value = [...logs.value, entry];
 
-    // Upload to cloud if enabled (Firebase approach)
-    _firebaseService?.logEntry(entry);
-
-    // Upload to secure API if enabled (recommended approach)
+    // Upload to secure API if enabled
     _secureService?.logEntry(entry);
 
     // Process for alerts if enabled
@@ -356,116 +307,43 @@ class Logarte {
 
   // ============ CLOUD LOGGING METHODS ============
 
-  /// Check if cloud logging is enabled (either Firebase or secure API)
+  /// Check if cloud logging is enabled
   bool get isCloudLoggingEnabled =>
-      (cloudConfig?.enableCloudLogging == true && _firebaseService != null) ||
-      (secureConfig?.enableCloudLogging == true && _secureService != null);
+      secureConfig?.enableCloudLogging == true && _secureService != null;
 
   /// Get user ID for cloud logging
-  String? get currentUserId {
-    if (_firebaseService != null) {
-      return cloudConfig?.userId ?? cloudConfig?.phoneNumber;
-    } else if (_secureService != null) {
-      return secureConfig?.user.userId ?? secureConfig?.user.phoneNumber;
-    }
-    return null;
-  }
+  String? get currentUserId => secureConfig?.user.userId;
 
   /// Retrieve logs from cloud storage
-  Future<List<Map<String, dynamic>>> getCloudLogs({
-    String? userId,
-    DateTime? startTime,
-    DateTime? endTime,
-    String? logType,
+  Future<List<LogarteEntry>> getCloudLogs({
+    DateTime? before,
+    String? type,
     int limit = 100,
   }) async {
-    if (_firebaseService == null) {
+    if (_secureService == null) {
       debugPrint('Cloud logging not enabled');
       return [];
     }
 
-    return await _firebaseService!.getUserLogs(
-      userId: userId,
-      startTime: startTime,
-      endTime: endTime,
-      logType: logType,
-      limit: limit,
-    );
-  }
-
-  /// Retrieve team logs from cloud storage
-  Future<List<Map<String, dynamic>>> getTeamCloudLogs({
-    String? teamId,
-    DateTime? startTime,
-    DateTime? endTime,
-    int limit = 100,
-  }) async {
-    if (_firebaseService == null) {
-      debugPrint('Cloud logging not enabled');
-      return [];
-    }
-
-    return await _firebaseService!.getTeamLogs(
-      teamId: teamId,
-      startTime: startTime,
-      endTime: endTime,
-      limit: limit,
-    );
-  }
-
-  /// Stream real-time logs from cloud storage
-  Stream<List<Map<String, dynamic>>> streamCloudLogs({
-    String? userId,
-    String? logType,
-    int limit = 50,
-  }) {
-    if (_firebaseService == null) {
-      debugPrint('Cloud logging not enabled');
-      return Stream.empty();
-    }
-
-    return _firebaseService!.streamUserLogs(
-      userId: userId,
-      logType: logType,
+    return await _secureService!.getUserLogs(
+      before: before,
+      type: type,
       limit: limit,
     );
   }
 
   /// Force sync pending logs to cloud
   Future<void> syncToCloud() async {
-    if (_firebaseService == null && _secureService == null) {
+    if (_secureService == null) {
       debugPrint('Cloud logging not enabled');
       return;
     }
 
     // Force upload any pending logs
     try {
-      if (_firebaseService != null) {
-        await _firebaseService!.forceSyncPendingLogs();
-      }
-      if (_secureService != null) {
-        await _secureService!.forceSyncPendingLogs();
-      }
+      await _secureService!.forceSyncPendingLogs();
     } catch (e) {
       debugPrint('Failed to sync to cloud: $e');
-    }
-  }
-
-  /// Update cloud logging configuration
-  Future<void> updateCloudConfig(LogarteCloudConfig newConfig) async {
-    // Dispose current service if enabled
-    if (_firebaseService != null) {
-      _firebaseService!.dispose();
-      _firebaseService = null;
-    }
-
-    // Create new service with updated config
-    if (newConfig.enableCloudLogging) {
-      try {
-        _firebaseService = FirebaseLogarteService(config: newConfig);
-      } catch (e) {
-        debugPrint('Failed to update cloud config: $e');
-      }
     }
   }
 
@@ -474,7 +352,7 @@ class Logarte {
     return {
       'isEnabled': isCloudLoggingEnabled,
       'userId': currentUserId,
-      'teamId': cloudConfig?.teamId,
+      'teamId': secureConfig?.user.teamId,
       'pendingLogs': 0, // TODO: expose through public method
       'isOnline': true, // TODO: expose through public method
       'currentSession': 'session_id', // TODO: expose through public method
@@ -526,7 +404,6 @@ class Logarte {
 
   /// Dispose cloud service and alert system when shutting down
   void dispose() {
-    _firebaseService?.dispose();
     _secureService = null; // Secure service doesn't need explicit disposal
     _alertService?.dispose();
   }
