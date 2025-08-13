@@ -78,13 +78,13 @@ class _CloudExampleHomePageState extends State<CloudExampleHomePage> {
   @override
   void initState() {
     super.initState();
-    
+
     // Setup Dio with Logarte interceptor
     _dio = Dio()..interceptors.add(LogarteDioInterceptor(secureLogarte));
-    
+
     // Attach the console
     secureLogarte.attach(context: context, visible: true);
-    
+
     // Get cloud status
     _updateCloudStatus();
   }
@@ -110,19 +110,19 @@ class _CloudExampleHomePageState extends State<CloudExampleHomePage> {
             // Cloud Status Card
             _buildCloudStatusCard(),
             const SizedBox(height: 16),
-            
+
             // Basic Logging Section
             _buildBasicLoggingSection(),
             const SizedBox(height: 16),
-            
+
             // Network Requests Section
             _buildNetworkSection(),
             const SizedBox(height: 16),
-            
+
             // Cloud Operations Section
             _buildCloudOperationsSection(),
             const SizedBox(height: 16),
-            
+
             // Alert System Section
             _buildAlertSection(),
           ],
@@ -250,9 +250,9 @@ class _CloudExampleHomePageState extends State<CloudExampleHomePage> {
               children: [
                 ElevatedButton(
                   onPressed: _isLoading ? null : _syncToCloud,
-                  child: _isLoading 
-                    ? const Text('Syncing...')
-                    : const Text('Sync to Cloud'),
+                  child: _isLoading
+                      ? const Text('Syncing...')
+                      : const Text('Sync to Cloud'),
                 ),
                 ElevatedButton(
                   onPressed: _isLoading ? null : _loadCloudLogs,
