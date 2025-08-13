@@ -48,8 +48,17 @@ final Logarte secureLogarte = Logarte(
   ),
   alertConfig: AlertConfig(
     enableAlerts: true,
-    failureThreshold: 5,
-    timeWindowMinutes: 10,
+    rules: [
+      AlertRule(
+        id: 'api_failures',
+        type: AlertType.apiFailure,
+        severity: AlertSeverity.high,
+        name: 'API Failures',
+        description: 'Detects repeated API failures',
+        failureThreshold: 5,
+        timeWindow: Duration(minutes: 10),
+      ),
+    ],
   ),
 );
 

@@ -27,12 +27,25 @@ final Logarte alertLogarte = Logarte(
   password: '1234',
   ignorePassword: true,
 
-  // Cloud logging configuration
-  cloudConfig: LogarteCloudConfig(
-    enableCloudLogging: true,
-    userId: 'alert_demo_user',
-    teamId: 'demo_team',
-    allowTeamAccess: true,
+  // Secure cloud logging configuration
+  secureConfig: LogarteSecureConfig.production(
+    apiEndpoint: 'https://your-backend-api.com',
+    apiKey: 'your-secure-api-key',
+    user: LogarteUser(
+      userId: 'alert_demo_user',
+      email: 'demo@example.com',
+      displayName: 'Alert Demo User',
+      teamId: 'demo_team',
+      role: 'developer',
+      isActive: true,
+      lastSeen: DateTime.now(),
+      updatedAt: DateTime.now(),
+      settings: LogarteUserSettings(
+        enableCloudLogging: true,
+        logRetentionDays: 30,
+        allowTeamAccess: true,
+      ),
+    ),
   ),
 
   // Alert system configuration
