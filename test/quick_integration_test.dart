@@ -8,7 +8,7 @@ void main() {
   group('Quick Production Backend Test', () {
     test('Full integration test with your production endpoint', () async {
       print('🚀 Starting Logarte integration test...');
-      
+
       // 1. Initialize Logarte with your production config
       final logarte = Logarte(
         secureConfig: LogarteSecureConfig(
@@ -58,17 +58,22 @@ void main() {
       print('\n📝 Testing basic logging...');
       logarte.log('Integration test started at ${DateTime.now()}');
       logarte.log('Testing plain message logging');
-      logarte.log('Testing error logging with stack trace', stackTrace: StackTrace.current);
-      
+      logarte.log('Testing error logging with stack trace',
+          stackTrace: StackTrace.current);
+
       // Test database logging
       logarte.database(
         target: 'integration_test_config',
-        value: {'backend_url': 'https://submitlogs-e4gu3zs5kq-uc.a.run.app', 'test_id': 'quick_test'},
+        value: {
+          'backend_url': 'https://submitlogs-e4gu3zs5kq-uc.a.run.app',
+          'test_id': 'quick_test'
+        },
         source: 'integration_test',
       );
 
       expect(logarte.logs.value.length, greaterThanOrEqualTo(4));
-      print('✅ Basic logging working - ${logarte.logs.value.length} logs captured');
+      print(
+          '✅ Basic logging working - ${logarte.logs.value.length} logs captured');
 
       // 3. Test network logging with Dio interceptor
       print('\n🌐 Testing network logging...');
@@ -77,7 +82,8 @@ void main() {
 
       try {
         // Successful request
-        final response = await dio.get('https://jsonplaceholder.typicode.com/posts/1');
+        final response =
+            await dio.get('https://jsonplaceholder.typicode.com/posts/1');
         print('✅ Successful request logged (Status: ${response.statusCode})');
       } catch (e) {
         print('⚠️  Network request failed: $e');
@@ -94,7 +100,8 @@ void main() {
       await Future.delayed(Duration(milliseconds: 500));
       final networkLogs = logarte.logs.value.whereType<NetworkLogarteEntry>();
       expect(networkLogs.length, greaterThanOrEqualTo(1));
-      print('✅ Network logging working - ${networkLogs.length} network logs captured');
+      print(
+          '✅ Network logging working - ${networkLogs.length} network logs captured');
 
       // 4. Test cloud sync
       print('\n☁️  Testing cloud sync...');
@@ -148,16 +155,19 @@ void main() {
           'https://submitlogs-e4gu3zs5kq-uc.a.run.app/health',
           options: Options(
             headers: {
-              'Authorization': 'Bearer lga_production_me9ivrce_6df84fdd4033d699',
+              'Authorization':
+                  'Bearer lga_production_me9ivrce_6df84fdd4033d699',
               'Content-Type': 'application/json',
             },
             validateStatus: (status) => status != null && status < 500,
           ),
         );
-        print('✅ Backend health check passed (Status: ${healthResponse.statusCode})');
+        print(
+            '✅ Backend health check passed (Status: ${healthResponse.statusCode})');
       } catch (e) {
         print('⚠️  Backend health check failed: $e');
-        print('   Backend might not have a /health endpoint or might be temporarily unavailable');
+        print(
+            '   Backend might not have a /health endpoint or might be temporarily unavailable');
       }
 
       // 8. Cleanup
@@ -170,37 +180,47 @@ void main() {
       print('- Total logs captured: ${logarte.logs.value.length}');
       print('- Network logs: ${networkLogs.length}');
       print('- Alerts fired: ${alertsFired.length}');
-      print('- Cloud logging: ${logarte.isCloudLoggingEnabled ? 'Enabled' : 'Disabled'}');
+      print(
+          '- Cloud logging: ${logarte.isCloudLoggingEnabled ? 'Enabled' : 'Disabled'}');
       print('- Backend endpoint: https://submitlogs-e4gu3zs5kq-uc.a.run.app');
-      print('- API key format: Valid (${logarte.secureConfig?.apiKey?.substring(0, 20)}...)');
+      print(
+          '- API key format: Valid (${logarte.secureConfig?.apiKey?.substring(0, 20)}...)');
     });
 
     test('Backend API Key Validation', () {
       const apiKey = 'lga_production_me9ivrce_6df84fdd4033d699';
-      
+
       // Test API key format
-      expect(apiKey.startsWith('lga_'), isTrue, reason: 'API key should start with lga_');
-      expect(apiKey.contains('production'), isTrue, reason: 'Should be production key');
-      expect(apiKey.length, greaterThan(30), reason: 'API key should be sufficiently long');
-      
+      expect(apiKey.startsWith('lga_'), isTrue,
+          reason: 'API key should start with lga_');
+      expect(apiKey.contains('production'), isTrue,
+          reason: 'Should be production key');
+      expect(apiKey.length, greaterThan(30),
+          reason: 'API key should be sufficiently long');
+
       final parts = apiKey.split('_');
-      expect(parts.length, greaterThanOrEqualTo(3), reason: 'API key should have at least 3 parts separated by underscore');
+      expect(parts.length, greaterThanOrEqualTo(3),
+          reason:
+              'API key should have at least 3 parts separated by underscore');
       expect(parts[0], equals('lga'), reason: 'First part should be lga');
-      expect(parts[1], equals('production'), reason: 'Second part should be production');
-      expect(parts[2].length, greaterThan(5), reason: 'Key part should be sufficiently long');
-      
+      expect(parts[1], equals('production'),
+          reason: 'Second part should be production');
+      expect(parts[2].length, greaterThan(5),
+          reason: 'Key part should be sufficiently long');
+
       print('✅ API key validation passed');
     });
 
     test('Backend Endpoint Validation', () {
       const endpoint = 'https://submitlogs-e4gu3zs5kq-uc.a.run.app';
-      
+
       final uri = Uri.parse(endpoint);
       expect(uri.scheme, equals('https'), reason: 'Should use HTTPS');
       expect(uri.host, isNotEmpty, reason: 'Should have valid host');
-      expect(uri.host.endsWith('.run.app'), isTrue, reason: 'Should be Google Cloud Run endpoint');
+      expect(uri.host.endsWith('.run.app'), isTrue,
+          reason: 'Should be Google Cloud Run endpoint');
       expect(uri.path, isEmpty, reason: 'Base endpoint should not have path');
-      
+
       print('✅ Endpoint validation passed');
       print('   - Scheme: ${uri.scheme}');
       print('   - Host: ${uri.host}');

@@ -30,7 +30,7 @@ class ProductionTestApp extends StatelessWidget {
 final Logarte productionLogarte = Logarte(
   password: '1234',
   ignorePassword: true, // For testing
-  
+
   // Your actual production backend configuration
   secureConfig: LogarteSecureConfig(
     apiEndpoint: 'https://submitlogs-e4gu3zs5kq-uc.a.run.app',
@@ -55,7 +55,7 @@ final Logarte productionLogarte = Logarte(
     batchSize: 5,
     requestTimeout: Duration(seconds: 30),
   ),
-  
+
   // Alert configuration for production testing
   alertConfig: AlertConfig(
     enableAlerts: true,
@@ -100,30 +100,31 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
   @override
   void initState() {
     super.initState();
-    
+
     // Setup Dio with Logarte interceptor
     _dio = Dio();
     _dio.interceptors.add(LogarteDioInterceptor(productionLogarte));
-    
+
     // Attach Logarte console
     productionLogarte.attach(context: context, visible: true);
-    
+
     // Listen to alerts
     productionLogarte.alertStream.listen((alert) {
       setState(() {
         _alerts.insert(0, alert);
         if (_alerts.length > 10) _alerts.removeAt(10);
       });
-      
+
       _addTestResult('🚨 ALERT: ${alert.title} - ${alert.message}');
     });
-    
+
     // Update cloud status
     _updateCloudStatus();
-    
+
     // Log initial startup
     productionLogarte.log('Production test app started');
-    productionLogarte.log('Backend: https://submitlogs-e4gu3zs5kq-uc.a.run.app');
+    productionLogarte
+        .log('Backend: https://submitlogs-e4gu3zs5kq-uc.a.run.app');
     productionLogarte.log('User: ${productionLogarte.currentUserId}');
   }
 
@@ -135,7 +136,8 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
 
   void _addTestResult(String result) {
     setState(() {
-      _testResults.insert(0, '${DateTime.now().toString().substring(11, 19)}: $result');
+      _testResults.insert(
+          0, '${DateTime.now().toString().substring(11, 19)}: $result');
       if (_testResults.length > 20) _testResults.removeAt(20);
     });
   }
@@ -149,7 +151,8 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
         actions: [
           IconButton(
             icon: Badge(
-              label: _alerts.isNotEmpty ? Text(_alerts.length.toString()) : null,
+              label:
+                  _alerts.isNotEmpty ? Text(_alerts.length.toString()) : null,
               child: const Icon(Icons.notifications),
             ),
             onPressed: _showAlertsDialog,
@@ -173,13 +176,13 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isTestingInProgress ? null : _runFullTest,
-        icon: _isTestingInProgress 
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.play_arrow),
+        icon: _isTestingInProgress
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.play_arrow),
         label: Text(_isTestingInProgress ? 'Testing...' : 'Run Full Test'),
       ),
     );
@@ -195,8 +198,12 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
             Row(
               children: [
                 Icon(
-                  _cloudStatus['isEnabled'] == true ? Icons.cloud_done : Icons.cloud_off,
-                  color: _cloudStatus['isEnabled'] == true ? Colors.green : Colors.red,
+                  _cloudStatus['isEnabled'] == true
+                      ? Icons.cloud_done
+                      : Icons.cloud_off,
+                  color: _cloudStatus['isEnabled'] == true
+                      ? Colors.green
+                      : Colors.red,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -206,12 +213,15 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
               ],
             ),
             const SizedBox(height: 12),
-            _buildStatusRow('Endpoint', 'https://submitlogs-e4gu3zs5kq-uc.a.run.app'),
+            _buildStatusRow(
+                'Endpoint', 'https://submitlogs-e4gu3zs5kq-uc.a.run.app'),
             _buildStatusRow('API Key', 'lga_production_me9i****** (Valid)'),
-            _buildStatusRow('Cloud Logging', _cloudStatus['isEnabled'] == true ? 'Enabled' : 'Disabled'),
+            _buildStatusRow('Cloud Logging',
+                _cloudStatus['isEnabled'] == true ? 'Enabled' : 'Disabled'),
             _buildStatusRow('User ID', _cloudStatus['userId'] ?? 'Not set'),
             _buildStatusRow('Team ID', _cloudStatus['teamId'] ?? 'Not set'),
-            _buildStatusRow('Alert System', productionLogarte.isAlertSystemEnabled ? 'Active' : 'Inactive'),
+            _buildStatusRow('Alert System',
+                productionLogarte.isAlertSystemEnabled ? 'Active' : 'Inactive'),
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: _updateCloudStatus,
@@ -240,11 +250,13 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
             child: Text(
               value,
               style: TextStyle(
-                color: value.contains('Enabled') || value.contains('Active') || value.contains('Valid')
-                  ? Colors.green
-                  : value.contains('Disabled') || value.contains('Inactive')
-                    ? Colors.red
-                    : null,
+                color: value.contains('Enabled') ||
+                        value.contains('Active') ||
+                        value.contains('Valid')
+                    ? Colors.green
+                    : value.contains('Disabled') || value.contains('Inactive')
+                        ? Colors.red
+                        : null,
               ),
             ),
           ),
@@ -310,7 +322,8 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
               runSpacing: 8,
               children: [
                 ElevatedButton.icon(
-                  onPressed: () => productionLogarte.log('Quick test message at ${DateTime.now()}'),
+                  onPressed: () => productionLogarte
+                      .log('Quick test message at ${DateTime.now()}'),
                   icon: const Icon(Icons.message),
                   label: const Text('Send Log'),
                 ),
@@ -366,28 +379,28 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: _testResults.isEmpty
-                ? const Center(child: Text('No test results yet'))
-                : ListView.builder(
-                    padding: const EdgeInsets.all(8),
-                    itemCount: _testResults.length,
-                    itemBuilder: (context, index) {
-                      final result = _testResults[index];
-                      return Text(
-                        result,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'monospace',
-                          color: result.contains('✅') 
-                            ? Colors.green
-                            : result.contains('❌') || result.contains('🚨')
-                              ? Colors.red
-                              : result.contains('⚠️')
-                                ? Colors.orange
-                                : null,
-                        ),
-                      );
-                    },
-                  ),
+                  ? const Center(child: Text('No test results yet'))
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(8),
+                      itemCount: _testResults.length,
+                      itemBuilder: (context, index) {
+                        final result = _testResults[index];
+                        return Text(
+                          result,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'monospace',
+                            color: result.contains('✅')
+                                ? Colors.green
+                                : result.contains('❌') || result.contains('🚨')
+                                    ? Colors.red
+                                    : result.contains('⚠️')
+                                        ? Colors.orange
+                                        : null,
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -403,15 +416,15 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
     try {
       await _testBasicLogging();
       await Future.delayed(const Duration(seconds: 1));
-      
+
       await _testNetworkLogging();
       await Future.delayed(const Duration(seconds: 1));
-      
+
       await _testCloudSync();
       await Future.delayed(const Duration(seconds: 1));
-      
+
       await _testAlertSystem();
-      
+
       _addTestResult('🎉 Full test completed successfully!');
     } catch (e) {
       _addTestResult('❌ Full test failed: $e');
@@ -422,17 +435,18 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
 
   Future<void> _testBasicLogging() async {
     _addTestResult('📝 Testing basic logging...');
-    
+
     productionLogarte.log('Test message 1');
     productionLogarte.log('Test error message', stackTrace: StackTrace.current);
-    productionLogarte.database(target: 'test_db', value: 'test_value', source: 'production_test');
-    
+    productionLogarte.database(
+        target: 'test_db', value: 'test_value', source: 'production_test');
+
     _addTestResult('✅ Basic logging test completed');
   }
 
   Future<void> _testNetworkLogging() async {
     _addTestResult('🌐 Testing network logging...');
-    
+
     try {
       await _dio.get('https://jsonplaceholder.typicode.com/posts/1');
       _addTestResult('✅ Network logging test completed');
@@ -443,7 +457,7 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
 
   Future<void> _testCloudSync() async {
     _addTestResult('☁️ Testing cloud sync...');
-    
+
     try {
       await productionLogarte.syncToCloud();
       _addTestResult('✅ Cloud sync successful');
@@ -454,7 +468,7 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
 
   Future<void> _testAlertSystem() async {
     _addTestResult('🚨 Testing alert system...');
-    
+
     // Trigger some failures
     for (int i = 0; i < 4; i++) {
       try {
@@ -463,16 +477,17 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
         // Expected to fail
       }
     }
-    
+
     await Future.delayed(const Duration(seconds: 2));
     _addTestResult('✅ Alert system test completed');
   }
 
   Future<void> _makeTestAPICall() async {
     _addTestResult('📡 Making test API call...');
-    
+
     try {
-      final response = await _dio.get('https://jsonplaceholder.typicode.com/posts/1');
+      final response =
+          await _dio.get('https://jsonplaceholder.typicode.com/posts/1');
       _addTestResult('✅ API call successful (${response.statusCode})');
     } catch (e) {
       _addTestResult('❌ API call failed: $e');
@@ -481,7 +496,7 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
 
   Future<void> _triggerError() async {
     _addTestResult('💥 Triggering error for testing...');
-    
+
     try {
       await _dio.get('https://httpstat.us/500');
     } catch (e) {
@@ -498,27 +513,27 @@ class _ProductionTestHomePageState extends State<ProductionTestHomePage> {
           width: double.maxFinite,
           height: 300,
           child: _alerts.isEmpty
-            ? const Center(child: Text('No alerts yet'))
-            : ListView.builder(
-                itemCount: _alerts.length,
-                itemBuilder: (context, index) {
-                  final alert = _alerts[index];
-                  return ListTile(
-                    leading: Icon(
-                      Icons.warning,
-                      color: alert.severity == AlertSeverity.critical 
-                        ? Colors.red 
-                        : Colors.orange,
-                    ),
-                    title: Text(alert.title),
-                    subtitle: Text(alert.message),
-                    trailing: Text(
-                      alert.timestamp.toString().substring(11, 19),
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  );
-                },
-              ),
+              ? const Center(child: Text('No alerts yet'))
+              : ListView.builder(
+                  itemCount: _alerts.length,
+                  itemBuilder: (context, index) {
+                    final alert = _alerts[index];
+                    return ListTile(
+                      leading: Icon(
+                        Icons.warning,
+                        color: alert.severity == AlertSeverity.critical
+                            ? Colors.red
+                            : Colors.orange,
+                      ),
+                      title: Text(alert.title),
+                      subtitle: Text(alert.message),
+                      trailing: Text(
+                        alert.timestamp.toString().substring(11, 19),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    );
+                  },
+                ),
         ),
         actions: [
           TextButton(
